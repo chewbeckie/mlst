@@ -6,15 +6,21 @@ use JSON;
 use Data::Dumper;
 use constant BASE_URI => 'http://rest.pubmlst.org';
 
-
 my $http = HTTP::Tiny->new();
 my $schemes_uri = BASE_URI . '/db/pubmlst_plasmid_isolates/schemes';
-my $response = $http->get($schemes_uri);
-my $response_content_json = decode_json $response->{content};
-my @schemes = @{ $response_content_json->{schemes} };
+
+sub get_json {
+    my ($http, $uri) = @_;
+    my $response = $http->get($uri);
+    my $response_content_json = decode_json $response->{content};
+    return $response_content_json;
+}
+
+my @schemes = @{ get_json($http, $schemes_uri)->{schemes} };
 my $num_schemes = @schemes;
 
 print STDERR "There are $num_schemes pMLST schemes.\n";
+
 
 sub process_mlst_scheme_name {
     my ($scheme_name) = @_;
@@ -24,11 +30,9 @@ sub process_mlst_scheme_name {
 }
 
 sub download_pmlst_scheme_alleles {
-    my ($scheme_name, $scheme_url, $scheme_dir) = @_;
-    (my $seqdef_url = $scheme_url) =~ s/isolates/seqdef/; 
-    my $response = $http->get($seqdef_url);
-    my $response_content_json = decode_json $response->{content};
-    my @loci = @{ $response_content_json->{loci} };
+    my ($scheme_name, $scheme_uri, $scheme_dir) = @_;
+    (my $seqdef_uri = $scheme_uri) =~ s/isolates/seqdef/; 
+    my @loci = @{ get_json($http, $seqdef_uri)->{loci} };
     return @loci;
 }
 
